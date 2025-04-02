@@ -1,12 +1,8 @@
 package server;
 
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Date;
 
@@ -18,11 +14,14 @@ public class Message{
 
     @Id
     private Long id;
-
-    private final String senderUsername;
-    private final String recipientUsername;
-    private final String message;
-    private String deliveredStatus;
+    @NonNull
+    private String senderUsername;
+    @NonNull
+    private String recipientUsername;
+    @NonNull
+    private String message;
+    @NonNull
+    private Boolean deliveredStatus;
     private Date sentAt = new Date();
 
 

@@ -1,9 +1,10 @@
 package server.security;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-
+@AllArgsConstructor
 @Data
-public class RegistrationData {
+public class AuthData {
     private String username;
     private String password;
 }

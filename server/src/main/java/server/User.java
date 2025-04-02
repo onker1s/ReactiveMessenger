@@ -24,7 +24,7 @@ public class User implements UserDetails {
     @Id
     private String id;
 
-    private final String username;
+    private String username;
     private String password;
     private String email;
     private String userStatus;

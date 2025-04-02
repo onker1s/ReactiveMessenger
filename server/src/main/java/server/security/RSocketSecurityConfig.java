@@ -32,7 +32,7 @@ public class RSocketSecurityConfig {
         rsocket
                 .authorizePayload(authorize ->
                         authorize
-                                .anyRequest().authenticated()
+                                .anyRequest().permitAll()
                                 .anyExchange().permitAll()
                 )
                 .simpleAuthentication(Customizer.withDefaults());

@@ -1,47 +1,65 @@
 package server.security;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.rsocket.EnableRSocketSecurity;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.rsocket.EnableRSocketSecurity;
 import org.springframework.security.config.annotation.rsocket.RSocketSecurity;
-import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.rsocket.core.PayloadSocketAcceptorInterceptor;
-
+import reactor.core.publisher.Mono;
+import server.data.UserRepository;
 
 @Configuration
 @EnableRSocketSecurity
 public class RSocketSecurityConfig {
 
-        @Bean
-        public MapReactiveUserDetailsService userDetailsService() {
-            UserDetails user = User.withDefaultPasswordEncoder()
-                    .username("user")
-                    .password("password")
-                    .roles("USER")
-                    .build();
-            return new MapReactiveUserDetailsService(user);
-        }
+    private final UserRepository userRepo;
+    private final JwtUtil jwtUtil;
 
-    @Bean
-    PayloadSocketAcceptorInterceptor rsocketInterceptor(RSocketSecurity rsocket) {
-        rsocket
-                .authorizePayload(authorize ->
-                        authorize
-                                .anyRequest().permitAll()
-                                .anyExchange().permitAll()
-                )
-                .simpleAuthentication(Customizer.withDefaults());
-        return rsocket.build();
+    public RSocketSecurityConfig(UserRepository userRepo, JwtUtil jwtUtil) {
+        this.userRepo = userRepo;
+        this.jwtUtil = jwtUtil;
     }
 
     @Bean
-    public PasswordEncoder encoder() {
-//    return new StandardPasswordEncoder("53cr3t");
-        return NoOpPasswordEncoder.getInstance();
+    public ReactiveUserDetailsService userDetailsService() {
+        return username -> userRepo.findByUsername(username)
+                .map(user -> User.withUsername(user.getUsername())
+                        .password(user.getPassword())
+                        .roles("USER")
+                        .build()
+                )
+                .switchIfEmpty(Mono.error(new UsernameNotFoundException("User not found: " + username)));
+    }
+
+    @Bean
+    public JwtAuthenticationManager jwtAuthenticationManager() {
+        return new JwtAuthenticationManager(jwtUtil,userRepo);  // Создание и настройка JwtAuthenticationManager
+    }
+
+    @Bean
+    public PayloadSocketAcceptorInterceptor rsocketInterceptor(RSocketSecurity rsocket) {
+        rsocket
+                .authorizePayload(authorize -> authorize
+                        .setup().permitAll()
+                        .route("login").permitAll()
+                        .route("registration").permitAll()
+                        .route("deleteUser").authenticated()
+                        .anyRequest().authenticated()
+                )
+
+                .jwt(jwtSpec -> jwtSpec.authenticationManager(jwtAuthenticationManager())); // Теперь RSocket понимает JWT
+
+        return rsocket.build();
+    }
+
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

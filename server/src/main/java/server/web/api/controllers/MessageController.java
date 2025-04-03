@@ -17,6 +17,6 @@ public class MessageController {
 
     @MessageMapping("send-message")
     public Mono<Void> sendMessage(Mono<Message> messageMono) {
-        return messageService.proccesMessage(messageMono);
+        return messageService.processMessage(messageMono);
     }
 }

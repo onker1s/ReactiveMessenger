@@ -13,7 +13,7 @@ import java.util.Date;
 public class Message{
 
     @Id
-    private Long id;
+    private String id;
     @NonNull
     private String senderUsername;
     @NonNull
@@ -21,7 +21,7 @@ public class Message{
     @NonNull
     private String message;
     @NonNull
-    private Boolean deliveredStatus;
+    private boolean deliveredStatus;
     private Date sentAt = new Date();
 
 

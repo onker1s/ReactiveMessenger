@@ -6,5 +6,5 @@ import server.User;
 
 public interface UserRepository extends ReactiveCrudRepository<User, String> {
     Mono<User> findByUsername(String username);
-
+    Mono<User> deleteByUsername(String username);
 }

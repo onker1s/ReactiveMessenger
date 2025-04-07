@@ -28,31 +28,25 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
     }
 
-    public Mono<AuthResponse> login(Mono<AuthData> authData) {
+    public Mono<AuthResponse> login(AuthData data, RSocketRequester requester) {
         AuthResponse response = new AuthResponse();
-        response.cancel();
-        return authData.flatMap(data ->
-                    userRepo.findByUsername(data.getUsername())
-                            .flatMap(user -> {
+        return userRepo.findByUsername(data.getUsername())
+                .flatMap(user -> {
+                    if (passwordEncoder.matches(data.getPassword(), user.getPassword())) {
+                        String token = jwtUtil.generateToken(user.getUsername());
 
-                                if (passwordEncoder.matches(data.getPassword(), user.getPassword())) {
-                                    String token = jwtUtil.generateToken(user.getUsername());
+                        userSessionService.registerUser(user.getUsername(), requester).subscribe(); // <- Здесь всё ок
 
-
-                                    response.confirm(token);
-//Надо придумать создания подключений к каждому пользователю
-                                    userSessionService.registerUser(user.getUsername(),user.getUsername(), requester);
-
-                                    return Mono.just(response);
-                                } else {
-                                    response.cancel();
-                                    return Mono.just(response);
-                                }
-                            })
-                            .switchIfEmpty(Mono.just(response))
-        );
-
+                        response.confirm(token);
+                        return Mono.just(response);
+                    } else {
+                        response.cancel();
+                        return Mono.just(response);
+                    }
+                })
+                .switchIfEmpty(Mono.just(response));
     }
+
 
     public Mono<Void> logout(Mono<AuthData> authData) {
         return userSessionService.unregisterUser(authData.block().getUsername());

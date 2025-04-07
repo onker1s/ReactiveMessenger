@@ -2,32 +2,35 @@ package server.security;
 
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import server.data.UserRepository;
-import server.security.JwtUtil;
 
+@Component
 public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
-    private final JwtUtil jwtUtil;
+
     private final UserRepository userRepository;
 
-    public JwtAuthenticationManager(JwtUtil jwtUtil, UserRepository userRepository) {
-        this.jwtUtil = jwtUtil;
+    public JwtAuthenticationManager(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
-        String token = authentication.getCredentials().toString(); // Получаем JWT
-        String username = jwtUtil.extractUsername(token); // Извлекаем имя пользователя
+        System.out.println("|||||||||| STARTED JWT AUTHENTICATION");
 
-        if (username == null || !jwtUtil.validateToken(token)) {
-            return Mono.empty(); // Токен недействителен
+        if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
+            System.out.println("|||||||||| Not a JwtAuthenticationToken");
+            return Mono.empty();
         }
 
+        Jwt jwt = jwtAuth.getToken();
+        String username = jwt.getSubject(); // стандартное поле sub
+
         return userRepository.findByUsername(username)
-                .map(user -> new UsernamePasswordAuthenticationToken(user, token, user.getAuthorities()));
+                .map(user -> new UsernamePasswordAuthenticationToken(user, jwt.getTokenValue(), user.getAuthorities()));
     }
 }

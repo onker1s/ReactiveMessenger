@@ -45,6 +45,9 @@ public class MessageService {
                 .then();
     }
 
+    public Mono<Void> deleteMessages(String senderUsername, String recipientUsername) {
+        return messageRepository.deleteBySenderUsernameAndRecipientUsername(senderUsername, recipientUsername);
+    }
 
     public Flux<Message> loadUserMessages(String username) {
         return messageRepository.findByRecipientUsernameAndDeliveredStatusFalse(username)

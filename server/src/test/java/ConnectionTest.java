@@ -1,5 +1,7 @@
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,12 +13,14 @@ import server.ServerApplication;
 
 import java.net.URI;
 
-@SpringBootTest(classes = ServerApplication.class)
+@SpringBootTest(classes = ServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class ConnectionTest {
-
+    @Autowired
+    private RSocketRequester.Builder builder;
     private static RSocketRequester requester;
-    @BeforeAll
-    public static void setupOnce(@Autowired RSocketRequester.Builder builder) {
+
+    @BeforeEach
+    public void setup() {
         requester = builder
                 .connectTcp("localhost", 7000)
                 .block();
@@ -34,8 +38,8 @@ class ConnectionTest {
                 .verify();
     }
 
-    @AfterAll
-    public static void tearDownOnce() {
+    @AfterEach
+    public void tearDown() {
         requester.rsocket().dispose();
     }
 }

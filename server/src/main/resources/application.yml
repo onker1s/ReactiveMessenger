@@ -8,14 +8,16 @@ spring:
       port: 27017
       database: messenger_db
 
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+#  autoconfigure:
+#    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
 
 logging:
   level:
     org:
       springframework:
         security: DEBUG
+
+
 
 
 

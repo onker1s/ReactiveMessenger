@@ -18,9 +18,9 @@ public class AuthController {
         this.authService = authService;
     }
     @MessageMapping("login")
-    public Mono<AuthResponse> login(Mono<AuthData> authData) {
+    public Mono<AuthResponse> login(Mono<AuthData> authData, RSocketRequester requester) {
         System.out.println("----------------LOGIN-----------------------");
-        return authData.flatMap(data -> authService.login(authData));
+        return authData.flatMap(data -> authService.login(data, requester));
     }
     public Mono<Void> logout(Mono<AuthData> authData) {
         System.out.println("----------------LOGOUT-----------------------");

@@ -8,4 +8,5 @@ import server.Message;
 public interface MessageRepository extends ReactiveCrudRepository<Message, String> {
     Flux<Message> findByRecipientUsernameAndDeliveredStatusFalse(String recipientUsername);
     Mono<Message> findBySenderUsernameAndRecipientUsername(String senderUsername, String recipientUsername);
+    Mono<Void> deleteBySenderUsernameAndRecipientUsername(String sender, String recipient);
 }

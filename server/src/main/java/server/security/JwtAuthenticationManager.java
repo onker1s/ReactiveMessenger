@@ -23,7 +23,6 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
         System.out.println("|||||||||| STARTED JWT AUTHENTICATION");
 
         if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
-            System.out.println("|||||||||| Not a JwtAuthenticationToken");
             return Mono.empty();
         }
 

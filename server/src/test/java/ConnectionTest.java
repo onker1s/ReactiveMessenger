@@ -13,7 +13,7 @@ import server.ServerApplication;
 
 import java.net.URI;
 
-@SpringBootTest(classes = ServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(classes = ServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ConnectionTest {
     @Autowired
     private RSocketRequester.Builder builder;

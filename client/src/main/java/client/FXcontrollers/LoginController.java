@@ -59,14 +59,16 @@ public class LoginController {
                 .subscribe();
         errorLabel.setText(""); // очистить ошибку
         System.out.println("Вход: " + username + ", пароль: " + password);
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/view/chat.fxml"));
-            Parent loginRoot = fxmlLoader.load();
-            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            Scene registerScene = new Scene(loginRoot,320, 240);
-            stage.setScene(registerScene);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(RSocketClientService.getToken() != null) {
+            try {
+                FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/view/chat.fxml"));
+                Parent loginRoot = fxmlLoader.load();
+                Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+                Scene registerScene = new Scene(loginRoot, 320, 240);
+                stage.setScene(registerScene);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
     }

@@ -18,7 +18,6 @@ public class JwtUtil {
 
     public JwtUtil() {
         this.secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-        System.out.printf("Secret Key JWTUtil: " +  secretKey + "\n");
     }
 
     public String generateToken(String username) {
@@ -38,7 +37,6 @@ public class JwtUtil {
     }
 
     public Claims parseToken(String token) {
-        System.out.println("///////// PARSING TOKEN");
         return Jwts.parser()
                 .setSigningKey(secretKey)
                 .parseClaimsJws(token)
@@ -47,7 +45,6 @@ public class JwtUtil {
 
     public boolean validateToken(String token) {
         try {
-            System.out.println("///////// VALIDATING TOKEN");
             return !parseToken(token).getExpiration().before(new Date());
         } catch (Exception e) {
             return false;

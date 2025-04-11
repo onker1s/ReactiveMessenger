@@ -109,6 +109,16 @@ public class RSocketClientService {
                 .data(username)
                 .retrieveFlux(String.class);
     }
+    public Flux<AuthData> getStatuses() {
+        return requester
+                .route("load-statuses")
+                .metadata("Bearer " + jwtToken, MimeType.valueOf("message/x.rsocket.authentication.bearer.v0"))
+                .data(username)
+                .retrieveFlux(AuthData.class)
+                .doOnNext(authData -> {
+                    System.out.println(authData.toString());
+                });
+    }
 
     public Mono<Boolean> checkUserExists(String username) {
 

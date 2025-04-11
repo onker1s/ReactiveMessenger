@@ -21,7 +21,6 @@ public class MessageService {
         return messageMono
                 .flatMap(message -> {
                     message.setDeliveredStatus(false); // Изначально сообщение не доставлено
-                    System.out.println("message recieved");
                     return messageRepository.save(message)
                             .then(sendMessageIfOnline(message));
                 })
@@ -29,11 +28,9 @@ public class MessageService {
     }
 
     private Mono<Void> sendMessageIfOnline(Message message) {
-        System.out.println("sending message");
         return userSessionService.isUserConnected(message.getRecipientUsername())
                 .flatMap(isConnected -> {
                     if (isConnected) {
-                        System.out.println("user connected");
                         return userSessionService.sendMessageToUser(message.getRecipientUsername(), message)
                                 .then(messageRepository.findById(message.getId())
                                         .flatMap(existingMessage -> {

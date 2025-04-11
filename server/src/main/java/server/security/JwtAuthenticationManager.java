@@ -20,15 +20,11 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
-        System.out.println("|||||||||| STARTED JWT AUTHENTICATION");
-
         if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
             return Mono.empty();
         }
-
         Jwt jwt = jwtAuth.getToken();
-        String username = jwt.getSubject(); // стандартное поле sub
-
+        String username = jwt.getSubject();
         return userRepository.findByUsername(username)
                 .map(user -> new UsernamePasswordAuthenticationToken(user, jwt.getTokenValue(), user.getAuthorities()));
     }

@@ -59,7 +59,6 @@ public class RSocketSecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder(JwtUtil jwtUtil) {
-        System.out.printf("Secret Key JWTDecoder: " +  jwtUtil.getSecretKey() + "\n");
         return NimbusJwtDecoder.withSecretKey(jwtUtil.getSecretKey()).build();
     }
 

@@ -8,23 +8,24 @@ import server.security.AuthData;
 import server.security.AuthResponse;
 import server.web.api.service.AuthService;
 import server.web.api.service.MessageService;
+import server.web.api.service.UserSessionService;
 
 @Controller
 public class AuthController {
 
     private final AuthService authService;
 
-    public AuthController(AuthService authService) {
+
+    public AuthController(AuthService authService, UserSessionService userSessionService) {
         this.authService = authService;
     }
     @MessageMapping("login")
     public Mono<AuthResponse> login(Mono<AuthData> authData, RSocketRequester requester) {
-        System.out.println("----------------LOGIN-----------------------");
         return authData.flatMap(data -> authService.login(data, requester));
     }
     @MessageMapping("logout")
     public Mono<Void> logout(String username) {
-        System.out.println("----------------LOGOUT-----------------------");
+        System.out.println("Logging out " + username);
         return authService.logout(username);
     }
 

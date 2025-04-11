@@ -62,10 +62,19 @@ public class LoginController {
                                         wevent.consume(); // Отменить закрытие
                                     }
                                     else {
-                                        clientService.logout().subscribe();
-                                        clientService.disconnect();
-                                        Platform.exit();
+                                        clientService.logout()
+                                                .doOnSuccess(unused -> {
+                                                    clientService.disconnect();
+                                                    Platform.exit();
+                                                })
+                                                .doOnError(error -> {
+                                                    System.err.println("Ошибка при выходе: " + error.getMessage());
+                                                    clientService.disconnect();
+                                                    Platform.exit();
+                                                })
+                                                .subscribe();
                                     }
+
                                 });
                             } catch (IOException e) {
                                 e.printStackTrace();

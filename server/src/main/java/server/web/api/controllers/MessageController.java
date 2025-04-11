@@ -31,13 +31,11 @@ public class MessageController {
     }
     @MessageMapping("load-dialog")
     public Flux<Message> loadUserMessages(AuthData d) {
-        System.out.println("Loading user messages");
         return messageRepository
                 .findAllByRecipientUsernameAndSenderUsernameOrRecipientUsernameAndSenderUsername(
                         d.getUsername(), d.getPassword(),
                         d.getPassword(), d.getUsername()
-                )
-                .doOnNext(message -> System.out.println("Отправляется сообщение: " + message));
+                );
     }
     @MessageMapping("load-dialogues")
     public Flux<String> loadDialogues(String username) {
@@ -51,8 +49,7 @@ public class MessageController {
                         return message.getSenderUsername();
                     }
                 })
-                .distinct()
-                .doOnNext(message -> System.out.println("Отправляется сообщение: " + message));
+                .distinct();
     }
 
 

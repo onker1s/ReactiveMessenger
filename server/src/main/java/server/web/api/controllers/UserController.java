@@ -2,18 +2,24 @@ package server.web.api.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import server.data.MessageRepository;
 import server.data.UserRepository;
+import server.security.AuthData;
+import server.web.api.service.UserSessionService;
 
 @Controller
 public class UserController {
 
     private final UserRepository userRepository;
-
+    private final UserSessionService userSessionService;
     @Autowired
-    public UserController(UserRepository userRepository) {
+    public UserController(UserRepository userRepository, UserSessionService userSessionService) {
         this.userRepository = userRepository;
+        this.userSessionService = userSessionService;
     }
 
     @MessageMapping("deleteUser")
@@ -25,7 +31,14 @@ public class UserController {
     @MessageMapping("check-user-exists")
     public Mono<Boolean> checkUserExists(String username) {
         return userRepository.findByUsername(username)
-                .map(user -> true)  // Если пользователь найден, возвращаем true
-                .defaultIfEmpty(false);  // Если пользователь не найден, возвращаем false
+                .map(user -> true)
+                .defaultIfEmpty(false);
+    }
+    @MessageMapping("load-statuses")
+    public Flux<AuthData> loadDialogues(String username) {
+        System.out.println("Loading statuses");
+        return userSessionService.sendStatusToUser(username);
+
+
     }
 }

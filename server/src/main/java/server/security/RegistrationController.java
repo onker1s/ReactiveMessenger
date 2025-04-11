@@ -23,13 +23,11 @@ public class RegistrationController {
 
     @MessageMapping("registration")
     public Mono<AuthResponse> processRegistration(Mono<AuthData> registerData) {
-        System.out.println("------------processRegistration------------------");
         return registerData.flatMap(data ->
                 userRepo.findByUsername(data.getUsername())
                         .flatMap(existingUser -> {
                             AuthResponse response = new AuthResponse();
                             response.cancel();
-                            System.out.println("------------UserExists------------------");
                             return Mono.just(response);
                         })
                         .switchIfEmpty(
@@ -37,7 +35,6 @@ public class RegistrationController {
                                         .then(Mono.fromSupplier(() -> {
                                             AuthResponse response = new AuthResponse();
                                             response.confirm();
-                                            System.out.println("------------CONFIRMED------------------");
                                             return response;
                                         }))
                         )

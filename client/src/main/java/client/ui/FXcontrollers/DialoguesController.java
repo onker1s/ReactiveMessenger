@@ -3,8 +3,10 @@ package client.ui.FXcontrollers;
 import client.ClientAppApplication;
 import client.connection.ClientMessageHandler;
 import client.connection.RSocketClientService;
+import client.dto.AuthData;
 import client.dto.Message;
 import client.ui.DialogCreator;
+import client.ui.StatusUpdater;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -27,7 +29,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-public class DialoguesController implements DialogCreator {
+public class DialoguesController implements DialogCreator, StatusUpdater {
 
     @FXML
     private ListView<String> dialoguesListView;
@@ -45,11 +47,31 @@ public class DialoguesController implements DialogCreator {
     @FXML
     public void initialize() throws IOException {
         ClientMessageHandler.setDialogCreator(this);
+        ClientMessageHandler.setStatusUpdater(this);
         clientService = new RSocketClientService(RSocketRequester.builder());
         loadDialogues();
+        loadStatuses();
         startDialogButton.setOnAction(event -> handleStartDialog());
         dialoguesListView.setOnMouseClicked(this::openChat);
     }
+
+    private void loadStatuses() {
+        clientService.getStatuses().subscribe(userData -> {
+            Platform.runLater(() -> {
+                String username = userData.getUsername();
+                String status = userData.getPassword(); // или getStatus(), если есть
+                for (int i = 0; i < dialoguesListView.getItems().size(); i++) {
+                    String item = dialoguesListView.getItems().get(i);
+                    String[] parts = item.split(" ");
+                    if (parts.length > 0 && parts[0].equals(username)) {
+                        dialoguesListView.getItems().set(i, username + " " + status);
+                        break;
+                    }
+                }
+            });
+        });
+    }
+
 
 
     private void loadDialogues() {
@@ -119,7 +141,10 @@ public class DialoguesController implements DialogCreator {
 
     private void openChat(MouseEvent event) {
         if (event.getClickCount() == 2) {
-            String selectedUsername = dialoguesListView.getSelectionModel().getSelectedItem();
+
+            String item = dialoguesListView.getSelectionModel().getSelectedItem();
+            String[] parts = item.split(" ");
+            String selectedUsername = parts[0];
             if (selectedUsername == null) return;
 
             try {
@@ -130,7 +155,7 @@ public class DialoguesController implements DialogCreator {
                 controller.setRecipient(selectedUsername);
                 controller.loadMessages(selectedUsername);
                 Stage stage = new Stage();
-                stage.setTitle("Чат с " + selectedUsername);
+                stage.setTitle("Чат с " + selectedUsername + " " + parts[1]);
                 stage.setScene(new Scene(root));
                 stage.setUserData(selectedUsername);
                 stage.show();
@@ -147,6 +172,9 @@ public class DialoguesController implements DialogCreator {
         }
     }
     private void openChat(String recipientUsername) {
+        String item = dialoguesListView.getSelectionModel().getSelectedItem();
+        String[] parts = item.split(" ");
+        String selectedUsername = parts[0];
             if (recipientUsername == null) return;
 
             try {
@@ -174,18 +202,53 @@ public class DialoguesController implements DialogCreator {
 
     }
     public void displayNewDialog(String sender) {
+
         Platform.runLater(() -> {
-            System.out.println("newDialog");
-            for (Stage stage : openChatStages) {
-                if (!sender.equals(stage.getUserData())) {
+            if(!openChatStages.isEmpty()) {
+                boolean exists = false;
+                for (Stage stage : openChatStages) {
+                    if (sender.equals(stage.getUserData())) {
+                        exists = true;
+                        break;
+                    }
+                }
+                 if(!exists) {
                     openChat(sender);
-                    break;
                 }
             }
-            if (!dialoguesListView.getItems().contains(sender)) {
+            else {
+                openChat(sender);
+            }
+
+            if (!dialoguesListView.getItems().contains(sender + " online")) {
                 dialoguesListView.getItems().add(sender);
             }
 
         });
     }
+
+    public void updateStatus(AuthData statusData) {
+        Platform.runLater(() -> {
+            String username = statusData.getUsername();
+            String newStatus = statusData.getPassword();
+
+            for (int i = 0; i < dialoguesListView.getItems().size(); i++) {
+                String item = dialoguesListView.getItems().get(i);
+                String[] parts = item.split(" ");
+                if (parts.length > 0 && parts[0].equals(username)) {
+                    dialoguesListView.getItems().set(i, username + " " + newStatus);
+                    break;
+                }
+            }
+            if(!openChatStages.isEmpty()) {
+                for (Stage stage : openChatStages) {
+                    if (username.equals(stage.getUserData())) {
+                        stage.setTitle("Чат с " + username + " " + newStatus);
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
 }

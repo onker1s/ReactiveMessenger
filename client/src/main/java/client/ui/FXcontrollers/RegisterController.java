@@ -1,4 +1,4 @@
-package client.FXcontrollers;
+package client.ui.FXcontrollers;
 
 
 import client.connection.RSocketClientService;
@@ -36,11 +36,11 @@ public class RegisterController {
     private Label errorLabel;
 
     @FXML
-    private void onRegister(ActionEvent event) throws IOException {
+    private void onRegister(ActionEvent event) throws IOException, InterruptedException {
         String username = usernameField.getText();
         String password1 = passwordField1.getText();
         String password2 = passwordField2.getText();
-        AtomicBoolean status = new AtomicBoolean(false);
+
         if (username == null || username.isEmpty() ||
                 password1 == null || password1.isEmpty() ||
                 password2 == null || password2.isEmpty()) {
@@ -58,7 +58,18 @@ public class RegisterController {
                 .doOnNext(response -> {
                     Platform.runLater(() -> {
                         if (response.getStatus().equals("confirmed")) {
-                            status.set(true);
+                            try {
+                                FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/view/login.fxml"));
+                                Parent loginRoot = fxmlLoader.load();
+                                Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+                                Scene registerScene = new Scene(loginRoot, 320, 240);
+                                stage.setScene(registerScene);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        else{
+                            errorLabel.setText("Имя пользователя занято");
                         }
                     });
                 })
@@ -70,18 +81,21 @@ public class RegisterController {
                 .subscribe();
         errorLabel.setText(""); // очистить ошибку
         System.out.println("Регистрация: " + username + ", пароль: " + password1);
-        if (status.get()) {
-            try {
-                FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/view/login.fxml"));
-                Parent loginRoot = fxmlLoader.load();
-                Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-                Scene registerScene = new Scene(loginRoot, 320, 240);
-                stage.setScene(registerScene);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
 
+
+    }
+
+    @FXML
+    private void goBack(ActionEvent event) {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/view/login.fxml"));
+            Parent loginRoot = fxmlLoader.load();
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            Scene registerScene = new Scene(loginRoot, 320, 240);
+            stage.setScene(registerScene);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 

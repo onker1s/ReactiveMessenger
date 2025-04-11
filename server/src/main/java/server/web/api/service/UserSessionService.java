@@ -20,7 +20,9 @@ public class UserSessionService {
     }
 
     public Mono<Void> unregisterUser(String username) {
+
         userRequesters.remove(username);
+        System.out.println(userRequesters.keySet());
         return Mono.empty();
     }
 
@@ -30,11 +32,14 @@ public class UserSessionService {
 
     public Mono<Void> sendMessageToUser(String username, Message message) {
         RSocketRequester requester = userRequesters.get(username);
+        System.out.println("Метод вызван");
         if (requester != null) {
+            System.out.println("Сообщение отправлено");
             return requester.route("receive-message")
                     .data(message)
                     .send();
         } else {
+            System.out.println("Не верный requester");
             return Mono.error(new RuntimeException("User not connected"));
         }
     }

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.geometry.Pos?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="client.ui.FXcontrollers.DialoguesController">
+
+    <top>
+        <Label text="Ваши диалоги">
+            <padding>
+                <Insets top="20" bottom="10" left="20" right="20"/>
+            </padding>
+            <style>
+                -fx-font-size: 20px;
+                -fx-font-weight: bold;
+            </style>
+        </Label>
+    </top>
+
+    <center>
+        <ListView fx:id="dialoguesListView" prefWidth="300" prefHeight="400">
+            <style>
+                -fx-font-size: 14px;
+            </style>
+        </ListView>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="10">
+            <padding>
+                <Insets top="10" bottom="10" left="20" right="20"/>
+            </padding>
+
+            <Button fx:id="startDialogButton" text="Начать диалог" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Button fx:id="logoutButton" text="Выйти" onAction="#handleLogout"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

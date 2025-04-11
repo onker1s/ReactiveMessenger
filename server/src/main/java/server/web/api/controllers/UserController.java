@@ -22,4 +22,10 @@ public class UserController {
                 .flatMap(userRepository::delete)
                 .then();
     }
+    @MessageMapping("check-user-exists")
+    public Mono<Boolean> checkUserExists(String username) {
+        return userRepository.findByUsername(username)
+                .map(user -> true)  // Если пользователь найден, возвращаем true
+                .defaultIfEmpty(false);  // Если пользователь не найден, возвращаем false
+    }
 }

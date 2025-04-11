@@ -22,9 +22,10 @@ public class AuthController {
         System.out.println("----------------LOGIN-----------------------");
         return authData.flatMap(data -> authService.login(data, requester));
     }
-    public Mono<Void> logout(Mono<AuthData> authData) {
+    @MessageMapping("logout")
+    public Mono<Void> logout(String username) {
         System.out.println("----------------LOGOUT-----------------------");
-        return authService.logout(authData);
+        return authService.logout(username);
     }
 
 }

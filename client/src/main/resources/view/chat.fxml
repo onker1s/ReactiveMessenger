@@ -4,7 +4,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane fx:id="chatPane" xmlns:fx="http://javafx.com/fxml" fx:controller="client.FXcontrollers.ChatController">
+<BorderPane fx:id="chatPane" xmlns:fx="http://javafx.com/fxml" fx:controller="client.ui.FXcontrollers.ChatController">
     <center>
         <VBox>
             <padding>
@@ -20,7 +20,6 @@
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
             <HBox spacing="10">
-                <TextField fx:id="recipientField" promptText="Имя получателя"/>
                 <TextField fx:id="messageField" promptText="Введите сообщение..."/>
                 <Button fx:id="sendButton" text="Отправить" onAction="#sendMessage"/>
             </HBox>

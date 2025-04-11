@@ -21,7 +21,7 @@ public class ClientAppApplication extends Application {
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(ClientAppApplication.class.getResource("/view/login.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 320, 240);
-        stage.setTitle("Hello!");
+        stage.setTitle("OnChat");
         stage.setScene(scene);
         stage.show();
     }

@@ -4,22 +4,25 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml" fx:controller="client.FXcontrollers.RegisterController">
-    <children>
-        <VBox spacing="10" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="10" AnchorPane.rightAnchor="10" AnchorPane.bottomAnchor="10">
-            <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+<AnchorPane xmlns:fx="http://javafx.com/fxml" fx:controller="client.ui.FXcontrollers.RegisterController">
+    <VBox spacing="10" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="10" AnchorPane.rightAnchor="10"
+          AnchorPane.bottomAnchor="10">
+        <padding>
+            <Insets top="20" right="20" bottom="20" left="20"/>
+        </padding>
 
-            <Label text="Логин:"/>
-            <TextField fx:id="usernameField"/>
+        <Label text="Логин:"/>
+        <TextField fx:id="usernameField"/>
 
-            <Label text="Пароль:"/>
-            <PasswordField fx:id="passwordField1"/>
+        <Label text="Пароль:"/>
+        <PasswordField fx:id="passwordField1"/>
 
-            <Label text="Повторите пароль:"/>
-            <PasswordField fx:id="passwordField2"/>
+        <Label text="Повторите пароль:"/>
+        <PasswordField fx:id="passwordField2"/>
 
-            <Button text="Зарегистрироваться" onAction="#onRegister"/>
-            <Label fx:id="errorLabel" textFill="red"/>
-        </VBox>
-    </children>
+        <Button text="Зарегистрироваться" onAction="#onRegister"/>
+        <Region HBox.hgrow="ALWAYS" />
+        <Button text="Назад" onAction="#goBack"/>
+        <Label fx:id="errorLabel" textFill="red"/>
+    </VBox>
 </AnchorPane>

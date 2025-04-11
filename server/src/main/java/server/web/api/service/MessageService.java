@@ -29,9 +29,11 @@ public class MessageService {
     }
 
     private Mono<Void> sendMessageIfOnline(Message message) {
+        System.out.println("sending message");
         return userSessionService.isUserConnected(message.getRecipientUsername())
                 .flatMap(isConnected -> {
                     if (isConnected) {
+                        System.out.println("user connected");
                         return userSessionService.sendMessageToUser(message.getRecipientUsername(), message)
                                 .then(messageRepository.findById(message.getId())
                                         .flatMap(existingMessage -> {
@@ -49,9 +51,5 @@ public class MessageService {
         return messageRepository.deleteBySenderUsernameAndRecipientUsername(senderUsername, recipientUsername);
     }
 
-    public Flux<Message> loadUserMessages(String username) {
-        return messageRepository.findByRecipientUsernameAndDeliveredStatusFalse(username)
-                .flatMap(message -> userSessionService.sendMessageToUser(username, message)
-                        .thenReturn(message));
-    }
+
 }

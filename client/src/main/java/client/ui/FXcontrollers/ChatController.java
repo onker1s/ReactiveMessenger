@@ -2,6 +2,7 @@ package client.ui.FXcontrollers;
 
 import client.connection.RSocketClientService;
 import client.connection.ClientMessageHandler;
+import client.dto.Dialog;
 import client.dto.Message;
 import client.ui.MessageDisplay;
 import javafx.application.Platform;
@@ -26,11 +27,8 @@ public class ChatController implements MessageDisplay {
 
     @FXML
     private TextField messageField;
-
-
     @Setter
-    private String recipient;
-
+    private Dialog dialog;
     @FXML
     private Button sendButton;
 
@@ -39,23 +37,21 @@ public class ChatController implements MessageDisplay {
         ClientMessageHandler.setMessageDisplay(this);
         clientService = new RSocketClientService(RSocketRequester.builder());
     }
-    public void loadMessages(String recipient) {
-        clientService.getDialog(recipient).doOnNext(message ->
-                        dispMessage(message.getSenderUsername(),
-                                message.getRecipientUsername(), message.getMessage()))
+    public void loadMessages(String dialogId) {
+        clientService.getDialog(dialogId).doOnNext(message ->
+                        dispMessage(message.getSenderUsername(), message.getMessage()))
                 .subscribe();
     }
     @FXML
     private void sendMessage() throws IOException {
 
         String text = messageField.getText().trim();
-
+        String recipient = DialoguesController.getOtherUsername(dialog);
         if (text.isEmpty()) {
             messageArea.appendText("Введите сообщение!\n");
             return;
         }
-
-        clientService.sendMessage(recipient, text)
+        clientService.sendMessage(dialog.getId(), text)
                 .doOnSuccess(unused -> {
                     Platform.runLater(() -> {
                         messageArea.appendText("Вы -> " + recipient + ": " + text + "\n");
@@ -63,12 +59,14 @@ public class ChatController implements MessageDisplay {
                     });
 
                 })
-                .doOnError(error -> messageArea.appendText("Ошибка отправки: " + error.getMessage() + "\n"))
+                .doOnError(error -> messageArea.appendText("Ошибка отправки: "
+                        + error.getMessage() + "\n"))
                 .subscribe();
 
     }
 
-    public void dispMessage(String sender, String recipient, String text) {
+    public void dispMessage(String sender, String text) {
+        String recipient = DialoguesController.getOtherUsername(dialog);
         Platform.runLater(() -> {
             if(Objects.equals(sender, RSocketClientService.getUsername()))
                 messageArea.appendText( "Вы -> " + recipient + " : "+ text + "\n");

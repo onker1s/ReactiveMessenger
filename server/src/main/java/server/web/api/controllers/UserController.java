@@ -2,11 +2,9 @@ package server.web.api.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import server.data.MessageRepository;
 import server.data.UserRepository;
 import server.security.AuthData;
 import server.web.api.service.UserSessionService;
@@ -35,10 +33,13 @@ public class UserController {
                 .defaultIfEmpty(false);
     }
     @MessageMapping("load-statuses")
-    public Flux<AuthData> loadDialogues(String username) {
+    public Flux<AuthData> loadStatuses(String username) {
         System.out.println("Loading statuses");
-        return userSessionService.sendStatusToUser(username);
-
-
+        return userSessionService.sendStatusesToUser(username);
     }
+    @MessageMapping("get-user-status")
+    public Flux<AuthData> getUserStatus(String username) {
+        return userSessionService.sendStatusesToUser(username);
+    }
+
 }

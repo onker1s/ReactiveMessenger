@@ -1,6 +1,7 @@
 package client.connection;
 
 import client.dto.AuthData;
+import client.dto.Dialog;
 import client.dto.Message;
 import client.ui.DialogCreator;
 import client.ui.StatusUpdater;
@@ -26,11 +27,7 @@ public class ClientMessageHandler {
                 messageDisplay.displayMessage(message.getSenderUsername(), message.getMessage());
             });
         }
-        if (dialogCreator != null) {
-            Platform.runLater(() -> {
-                dialogCreator.displayNewDialog(message.getSenderUsername());
-            });
-        }
+
 
         return Mono.empty();
     }
@@ -39,6 +36,16 @@ public class ClientMessageHandler {
         if (statusUpdater != null) {
             Platform.runLater(() -> {
                 statusUpdater.updateStatus(authData);
+            });
+        }
+        return Mono.empty();
+    }
+    @MessageMapping("new-dialog")
+    public Mono<Void> receiveNewDialog(Dialog dialog) {
+
+        if (dialogCreator != null) {
+            Platform.runLater(() -> {
+                dialogCreator.displayNewDialog(dialog);
             });
         }
         return Mono.empty();

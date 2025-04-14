@@ -5,24 +5,35 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane fx:id="chatPane" xmlns:fx="http://javafx.com/fxml" fx:controller="client.ui.FXcontrollers.ChatController">
+
+    <!-- Центральная область с сообщениями -->
     <center>
-        <VBox>
+        <VBox VBox.vgrow="ALWAYS">
             <padding>
                 <Insets top="10" right="10" bottom="5" left="10"/>
             </padding>
-            <TextArea fx:id="messageArea" editable="false" wrapText="true"/>
+            <TextArea fx:id="messageArea"
+                      editable="false"
+                      wrapText="true"
+                      VBox.vgrow="ALWAYS"/>
         </VBox>
     </center>
 
+    <!-- Нижняя панель ввода -->
     <bottom>
         <VBox spacing="5">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
             <HBox spacing="10">
-                <TextField fx:id="messageField" promptText="Введите сообщение..."/>
-                <Button fx:id="sendButton" text="Отправить" onAction="#sendMessage"/>
+                <TextField fx:id="messageField"
+                           promptText="Введите сообщение..."
+                           HBox.hgrow="ALWAYS"/>
+                <Button fx:id="sendButton"
+                        text="Отправить"
+                        onAction="#sendMessage"/>
             </HBox>
         </VBox>
     </bottom>
+
 </BorderPane>

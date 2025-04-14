@@ -4,10 +4,10 @@ import org.springframework.messaging.rsocket.RSocketRequester;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import server.Dialog;
 import server.Message;
-import server.data.MessageRepository;
+import server.data.DialogRepository;
 import server.security.AuthData;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
@@ -15,10 +15,10 @@ import java.util.Map;
 public class UserSessionService {
 
     private final Map<String, RSocketRequester> userRequesters = new ConcurrentHashMap<>();
-    private final MessageRepository messageRepository;
+    private final DialogRepository dialogRepository;
 
-    public UserSessionService(MessageRepository messageRepository) {
-        this.messageRepository = messageRepository;
+    public UserSessionService(DialogRepository dialogRepository) {
+        this.dialogRepository = dialogRepository;
     }
 
     public Mono<Void> registerUser(String username, RSocketRequester requester) {
@@ -49,13 +49,12 @@ public class UserSessionService {
         }
     }
     public Mono<Void> sendStatusUserUpdate(String username, String recipientName, String status) {
-        System.out.println("sendStatusUserUpdate");
         RSocketRequester requester;
         if (userRequesters.containsKey(recipientName)) {
              requester = userRequesters.get(recipientName);
         }
         else{
-            return Mono.error(new RuntimeException("User not connected"));
+            return Mono.empty();
         }
         AuthData authData = new AuthData(username, status);
         if (requester != null) {
@@ -67,15 +66,14 @@ public class UserSessionService {
         }
     }
 
-    public Flux<AuthData> sendStatusToUser(String username) {
-        return messageRepository
-                .findAllByRecipientUsernameOrSenderUsername(username, username)
-                .map(message -> {
-                    if (message.getSenderUsername().equals(username)) {
-                        return message.getRecipientUsername();
-                    } else {
-                        return message.getSenderUsername();
-                    }
+    public Flux<AuthData> sendStatusesToUser(String username) {
+        return dialogRepository
+                .findAllByParticipantIdsContaining(username)
+                .flatMap(dialog -> {
+                    // Найдём имя собеседника
+                    return Flux.fromIterable(dialog.getParticipantIds())
+                            .filter(other -> !other.equals(username)) // исключаем самого себя
+                            .next(); // берём одного собеседника
                 })
                 .distinct()
                 .map(otherUser -> {
@@ -84,6 +82,19 @@ public class UserSessionService {
                     return new AuthData(otherUser, status);
                 });
     }
+
+    public Mono<Void> sendNewDialog(String username, Dialog dialog) {
+        RSocketRequester requester = userRequesters.get(username);
+        if (requester != null) {
+            return requester.route("new-dialog")
+                            .data(dialog)
+                            .send();
+        } else {
+            return Mono.error(new RuntimeException("User not connected"));
+        }
+
+    }
+
 
 
 }

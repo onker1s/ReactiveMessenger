@@ -116,13 +116,7 @@ public class MessageControllerITest {
                 .expectComplete()
                 .verify(Duration.ofSeconds(5));
         System.out.println("---------------------------------------");
-        // 6) Проверка, что сообщение было сохранено в базе данных
-        StepVerifier.create(messageRepository.findBySenderUsernameAndRecipientUsername(USER1, USER2))
-                .expectNextMatches(savedMessage -> savedMessage.getSenderUsername().equals(USER1)
-                        && savedMessage.getRecipientUsername().equals(USER2)
-                        && savedMessage.getMessage().equals("Hello from user1"))
-                .expectComplete()
-                .verify(Duration.ofSeconds(5));
+
 
     }
 

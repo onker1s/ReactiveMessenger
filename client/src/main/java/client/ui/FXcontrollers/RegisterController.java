@@ -52,6 +52,11 @@ public class RegisterController {
             errorLabel.setText("Пароли не совпадают.");
             return;
         }
+        if (username.contains(" "))
+        {
+            errorLabel.setText("Имя не должно содержать пробелов");
+            return;
+        }
         RSocketClientService clientService = new RSocketClientService(RSocketRequester.builder());
 
         clientService.register(username, password1)
@@ -80,9 +85,6 @@ public class RegisterController {
                 })
                 .subscribe();
         errorLabel.setText(""); // очистить ошибку
-        System.out.println("Регистрация: " + username + ", пароль: " + password1);
-
-
     }
 
     @FXML

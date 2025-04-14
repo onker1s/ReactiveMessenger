@@ -26,6 +26,7 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
         Jwt jwt = jwtAuth.getToken();
         String username = jwt.getSubject();
         return userRepository.findByUsername(username)
-                .map(user -> new UsernamePasswordAuthenticationToken(user, jwt.getTokenValue(), user.getAuthorities()));
+                .map(user ->
+                        new UsernamePasswordAuthenticationToken(user, jwt.getTokenValue(), user.getAuthorities()));
     }
 }

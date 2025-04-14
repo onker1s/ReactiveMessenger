@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import server.Message;
+import server.data.DialogRepository;
 import server.data.MessageRepository;
 import server.web.api.service.UserSessionService;
 
@@ -11,10 +12,14 @@ import server.web.api.service.UserSessionService;
 public class MessageService {
     private final MessageRepository messageRepository;
     private final UserSessionService userSessionService;
+    private final DialogRepository dialogRepository;
 
-    public MessageService(MessageRepository messageRepository, UserSessionService userSessionService) {
+    public MessageService(MessageRepository messageRepository,
+                          UserSessionService userSessionService,
+                          DialogRepository dialogRepository) {
         this.messageRepository = messageRepository;
         this.userSessionService = userSessionService;
+        this.dialogRepository = dialogRepository;
     }
 
     public Mono<Void> processMessage(Mono<Message> messageMono) {
@@ -27,26 +32,32 @@ public class MessageService {
                 .then();
     }
 
-    private Mono<Void> sendMessageIfOnline(Message message) {
-        return userSessionService.isUserConnected(message.getRecipientUsername())
-                .flatMap(isConnected -> {
-                    if (isConnected) {
-                        return userSessionService.sendMessageToUser(message.getRecipientUsername(), message)
-                                .then(messageRepository.findById(message.getId())
-                                        .flatMap(existingMessage -> {
-                                            existingMessage.setDeliveredStatus(true);
-                                            return messageRepository.save(existingMessage);
-                                        })
-                                );
+    public Mono<Void> sendMessageIfOnline(Message message) {
+        return dialogRepository.findById(message.getDialogId())
+                .flatMap(dialog -> {
+                    // Находим имя получателя — тот, кто не отправитель
+                    String recipientUsername = dialog.getParticipantIds().stream()
+                            .filter(name -> !name.equals(message.getSenderUsername()))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (recipientUsername == null) {
+                        return Mono.empty(); // если что-то пошло не так
                     }
-                    return Mono.empty();
+
+                    return userSessionService.isUserConnected(recipientUsername)
+                            .flatMap(isConnected -> {
+                                if (isConnected) {
+                                    return userSessionService.sendMessageToUser(recipientUsername, message)
+                                            .then(messageRepository.findById(message.getId())
+                                                    .flatMap(existingMessage -> {
+                                                        existingMessage.setDeliveredStatus(true);
+                                                        return messageRepository.save(existingMessage);
+                                                    }));
+                                }
+                                return Mono.empty();
+                            });
                 })
                 .then();
     }
-
-    public Mono<Void> deleteMessages(String senderUsername, String recipientUsername) {
-        return messageRepository.deleteBySenderUsernameAndRecipientUsername(senderUsername, recipientUsername);
-    }
-
-
 }

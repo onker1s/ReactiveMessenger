@@ -39,45 +39,55 @@ public class LoginController {
             errorLabel.setText("Пожалуйста, заполните все поля.");
             return;
         }
+        if (username.contains(" "))
+        {
+            errorLabel.setText("Имя не должно содержать пробелов");
+        }
         RSocketClientService clientService = new RSocketClientService(RSocketRequester.builder());
         clientService.login(username, password)
                 .doOnNext(token -> {
                     Platform.runLater(() -> {
-                        System.out.println("Токен: " + token);
-                        if(!token.getToken().isEmpty()) {
-                            RSocketClientService.setToken(token.getToken());
-                            RSocketClientService.setUsername(username);
-                            try {
-                                FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/view/dialogues.fxml"));
-                                Parent loginRoot = fxmlLoader.load();
-                                Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-                                Scene registerScene = new Scene(loginRoot, 320, 240);
-                                stage.setScene(registerScene);
-                                stage.setOnCloseRequest(wevent -> {
-                                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Закрыть чат?", ButtonType.YES, ButtonType.NO);
-                                    alert.setHeaderText(null);
-                                    alert.setTitle("Подтверждение");
-                                    Optional<ButtonType> result = alert.showAndWait();
-                                    if (result.isPresent() && result.get() == ButtonType.NO) {
-                                        wevent.consume(); // Отменить закрытие
-                                    }
-                                    else {
-                                        clientService.logout()
-                                                .doOnSuccess(unused -> {
-                                                    clientService.disconnect();
-                                                    Platform.exit();
-                                                })
-                                                .doOnError(error -> {
-                                                    System.err.println("Ошибка при выходе: " + error.getMessage());
-                                                    clientService.disconnect();
-                                                    Platform.exit();
-                                                })
-                                                .subscribe();
-                                    }
+                        if (token.getStatus() == null) {
+                            Platform.runLater(() -> {
+                                errorLabel.setText("Неверное имя пользователя или пароль.");
+                            });
+                        } else {
+                            if (!token.getToken().isEmpty()) {
+                                RSocketClientService.setToken(token.getToken());
+                                RSocketClientService.setUsername(username);
+                                try {
+                                    FXMLLoader fxmlLoader = new FXMLLoader(getClass()
+                                            .getResource("/view/dialogues.fxml"));
+                                    Parent loginRoot = fxmlLoader.load();
+                                    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+                                    Scene registerScene = new Scene(loginRoot, 320, 240);
+                                    stage.setScene(registerScene);
+                                    stage.setOnCloseRequest(wevent -> {
+                                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Закрыть чат?",
+                                                ButtonType.YES, ButtonType.NO);
+                                        alert.setHeaderText(null);
+                                        alert.setTitle("Подтверждение");
+                                        Optional<ButtonType> result = alert.showAndWait();
+                                        if (result.isPresent() && result.get() == ButtonType.NO) {
+                                            wevent.consume(); // Отменить закрытие
+                                        } else {
+                                            clientService.logout()
+                                                    .doOnSuccess(unused -> {
+                                                        clientService.disconnect();
+                                                        Platform.exit();
+                                                    })
+                                                    .doOnError(error -> {
+                                                        System.err.println("Ошибка при выходе: " + error.getMessage());
+                                                        clientService.disconnect();
+                                                        Platform.exit();
+                                                    })
+                                                    .subscribe();
+                                        }
 
-                                });
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                                    });
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     });
@@ -89,10 +99,6 @@ public class LoginController {
                 })
                 .subscribe();
         errorLabel.setText("");
-        System.out.println("Вход: " + username + ", пароль: " + password);
-
-
-
     }
     @FXML
     private void onRegisterButtonClick(ActionEvent event) {

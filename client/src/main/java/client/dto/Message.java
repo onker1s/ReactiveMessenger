@@ -13,11 +13,11 @@ public class Message {
     @NonNull
     private String senderUsername;
     @NonNull
-    private String recipientUsername;
+    private String dialogId;
     @NonNull
     private String message;
+
     private boolean deliveredStatus;
     private Date sentAt = new Date();
-
 
 }

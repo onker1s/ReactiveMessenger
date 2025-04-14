@@ -25,10 +25,9 @@ import org.springframework.messaging.rsocket.RSocketRequester;
 
 import javafx.event.ActionEvent;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
+import client.dto.Dialog;
 public class DialoguesController implements DialogCreator, StatusUpdater {
 
     @FXML
@@ -40,8 +39,8 @@ public class DialoguesController implements DialogCreator, StatusUpdater {
     @FXML
     private Button logoutButton;
 
-    private Set<Stage> openChatStages = new HashSet<>();
-
+    private final Set<Stage> openChatStages = new HashSet<>();
+    private final List<Dialog> dialogList = new ArrayList<>();
     RSocketClientService clientService;
 
     @FXML
@@ -59,7 +58,7 @@ public class DialoguesController implements DialogCreator, StatusUpdater {
         clientService.getStatuses().subscribe(userData -> {
             Platform.runLater(() -> {
                 String username = userData.getUsername();
-                String status = userData.getPassword(); // или getStatus(), если есть
+                String status = userData.getPassword();
                 for (int i = 0; i < dialoguesListView.getItems().size(); i++) {
                     String item = dialoguesListView.getItems().get(i);
                     String[] parts = item.split(" ");
@@ -75,12 +74,24 @@ public class DialoguesController implements DialogCreator, StatusUpdater {
 
 
     private void loadDialogues() {
-
-        clientService.getDialogues().doOnNext(message ->
-                dialoguesListView.getItems().add(message))
+        clientService.getDialogues()
+                .doOnNext(dialog -> {
+                    dialogList.add(dialog);
+                    String otherUsername = getOtherUsername(dialog);
+                    Platform.runLater(() -> dialoguesListView.getItems().add(otherUsername + " offline"));
+                })
                 .subscribe();
-
     }
+
+    public static String getOtherUsername(Dialog dialog) {
+        String currentUser = RSocketClientService.getUsername();
+        return dialog.getParticipantIds()
+                .stream()
+                .filter(username -> !username.equals(currentUser))
+                .findFirst()
+                .orElse("неизвестный");
+    }
+
 
     private void handleStartDialog() {
         // Создаем всплывающее окно для ввода имени
@@ -93,27 +104,53 @@ public class DialoguesController implements DialogCreator, StatusUpdater {
         Optional<String> result = dialog.showAndWait();
 
         result.ifPresent(username -> {
-            clientService.checkUserExists(username)
-                    .doOnSuccess(userExists -> {
-                        if (userExists  && !dialoguesListView.getItems().contains(username)) {
+            if (!username.isEmpty()) {
+                clientService.checkUserExists(username)
+                        .doOnSuccess(userExists -> {
+                            if (userExists  && !dialoguesListView.getItems().contains(username) &&
+                                    !username.equals(RSocketClientService.getUsername()) &&
+                                    !dialoguesListView.getItems().contains(username + " offline") &&
+                                    !dialoguesListView.getItems().contains(username + " online") &&
+                                    !username.contains(" ")) {
+                                clientService.createDialog(new AuthData(RSocketClientService.getUsername(), username))
+                                        .doOnNext(dialog1 -> {
+                                            Platform.runLater(() -> {
+                                                dialoguesListView.getItems().add(username);
+                                                displayNewDialog(dialog1);
+                                            });})
+                                        .doOnError(error ->
+                                                Platform.runLater(() ->
+                                                        showAlert("Ошибка",
+                                                                "Произошла ошибка при создании диалога: "
+                                                                        + error.getMessage())))
+                                        .subscribe();
 
-                            Platform.runLater(() -> {
-                                openChat(username);
-                                dialoguesListView.getItems().add(username);
-                            });
-                        } else if (dialoguesListView.getItems().contains(username)) {
-                            // Если пользователя не существует, показываем сообщение
-                            Platform.runLater(() -> showAlert("Ошибка", "Диалог с таким пользователем уже существует."));
-                        }
+                            } else if (dialoguesListView.getItems().contains(username + " offline")
+                                    || dialoguesListView.getItems().contains(username + " online") ||
+                                    dialoguesListView.getItems().contains(username)) {
+                                Platform.runLater(() -> showAlert("Ошибка",
+                                        "Диалог с таким пользователем уже существует."));
+                            } else if (username.equals(RSocketClientService.getUsername())) {
+                                Platform.runLater(() -> showAlert("Ошибка",
+                                        "Нельзя начать диалог с самим собой."));
+                            }
+                            else {
+                                // Если пользователя не существует, показываем сообщение
+                                Platform.runLater(() -> showAlert("Пользователь не найден",
+                                        "Пользователь с таким именем не существует."));
 
-                        else {
-                            // Если пользователя не существует, показываем сообщение
-                           Platform.runLater(() -> showAlert("Пользователь не найден", "Пользователь с таким именем не существует."));
+                            }
+                        })
+                        .doOnError(error -> Platform.runLater(() ->showAlert("Ошибка",
+                                "Произошла ошибка при проверке пользователя: " + error.getMessage())))
+                        .subscribe();
+            }
+            else{
+                // Если пользователя не существует, показываем сообщение
+                Platform.runLater(() -> showAlert("Ошибка",
+                        "Введите имя пользователя."));
+            }
 
-                        }
-                    })
-                    .doOnError(error -> Platform.runLater(() ->showAlert("Ошибка", "Произошла ошибка при проверке пользователя: " + error.getMessage())))
-                    .subscribe();
         });
     }
     private void showAlert(String title, String message) {
@@ -126,7 +163,6 @@ public class DialoguesController implements DialogCreator, StatusUpdater {
     @FXML
     private void handleLogout(ActionEvent event) throws IOException {
          clientService.logout().subscribe();
-
         // Закрыть все окна чатов
         for (Stage chatStage : openChatStages) {
             chatStage.close();
@@ -139,75 +175,88 @@ public class DialoguesController implements DialogCreator, StatusUpdater {
         stage.show();
     }
 
+
+
     private void openChat(MouseEvent event) {
         if (event.getClickCount() == 2) {
-
             String item = dialoguesListView.getSelectionModel().getSelectedItem();
             String[] parts = item.split(" ");
             String selectedUsername = parts[0];
             if (selectedUsername == null) return;
+            openChat(item);
+        }
+    }
+    private void openChat(String recipientUsername) {
+        if (recipientUsername == null) return;
+        String[] parts ;
+        String selectedUsername;
+        if (recipientUsername.contains(" ")) {
+            parts = recipientUsername.split(" ");
+            selectedUsername = parts[0];
+        }
+        else {
+            parts = null;
+            selectedUsername = recipientUsername;
+        }
+        // Находим диалог по имени пользователя
+        Dialog dialog = dialogList.stream()
+                .filter(d -> getOtherUsername(d).equals(selectedUsername))
+                .findFirst()
+                .orElse(null);
 
+        if (dialog == null) {
+            showAlert("Ошибка", "Диалог с пользователем не найден.");
+            return;
+        }
+        if(!openChatStages.isEmpty()) {
+            for (Stage stage : openChatStages) {
+                if (selectedUsername.equals(stage.getUserData())) {
+                    Platform.runLater(() ->
+                            showAlert("Ошибка",
+                                    "Чат с эти пользователем уже открыт"));
+                    break;
+                }
+            }
+        }
+        else {
             try {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/chat.fxml"));
                 Parent root = loader.load();
 
                 ChatController controller = loader.getController();
-                controller.setRecipient(selectedUsername);
-                controller.loadMessages(selectedUsername);
+                controller.setDialog(dialog);
+                controller.loadMessages(dialog.getId());
+
                 Stage stage = new Stage();
-                stage.setTitle("Чат с " + selectedUsername + " " + parts[1]);
+                if (parts != null && parts.length > 1) {
+                    stage.setTitle("Чат с " + selectedUsername + " " + parts[1]);
+                } else {
+                    stage.setTitle("Чат с " + selectedUsername);
+                }
                 stage.setScene(new Scene(root));
-                stage.setUserData(selectedUsername);
+                stage.setUserData(recipientUsername);
                 stage.show();
-                // Добавляем окно чата в коллекцию
+
                 openChatStages.add(stage);
-
-                // Закрытие окна при закрытии Stage
                 stage.setOnCloseRequest(e -> openChatStages.remove(stage));
-
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
-    private void openChat(String recipientUsername) {
-        String item = dialoguesListView.getSelectionModel().getSelectedItem();
-        String[] parts = item.split(" ");
-        String selectedUsername = parts[0];
-            if (recipientUsername == null) return;
 
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/chat.fxml"));
-                Parent root = loader.load();
-
-                ChatController controller = loader.getController();
-                controller.setRecipient(recipientUsername);
-                controller.loadMessages(recipientUsername);
-                Stage stage = new Stage();
-                stage.setTitle("Чат с " + recipientUsername);
-                stage.setScene(new Scene(root));
-                stage.setUserData(recipientUsername);
-                stage.show();
-                // Добавляем окно чата в коллекцию
-                openChatStages.add(stage);
-
-                // Закрытие окна при закрытии Stage
-                stage.setOnCloseRequest(e -> openChatStages.remove(stage));
-
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-    }
-    public void displayNewDialog(String sender) {
-
+    public void displayNewDialog(Dialog dialog) {
+        dialogList.add(dialog);
+        String sender = getOtherUsername(dialog);
         Platform.runLater(() -> {
+            if(!dialoguesListView.getItems().contains(sender)) {
+                dialoguesListView.getItems().add(sender);
+            }
             if(!openChatStages.isEmpty()) {
                 boolean exists = false;
                 for (Stage stage : openChatStages) {
-                    if (sender.equals(stage.getUserData())) {
+                    if (getOtherUsername(dialog).equals(stage.getUserData())) {
                         exists = true;
                         break;
                     }
@@ -219,11 +268,6 @@ public class DialoguesController implements DialogCreator, StatusUpdater {
             else {
                 openChat(sender);
             }
-
-            if (!dialoguesListView.getItems().contains(sender + " online")) {
-                dialoguesListView.getItems().add(sender);
-            }
-
         });
     }
 
@@ -240,9 +284,11 @@ public class DialoguesController implements DialogCreator, StatusUpdater {
                     break;
                 }
             }
+
             if(!openChatStages.isEmpty()) {
                 for (Stage stage : openChatStages) {
                     if (username.equals(stage.getUserData())) {
+                        System.out.println("update status on chat stage");
                         stage.setTitle("Чат с " + username + " " + newStatus);
                         break;
                     }

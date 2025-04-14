@@ -7,7 +7,6 @@ import reactor.core.publisher.Mono;
 import server.security.AuthData;
 import server.security.AuthResponse;
 import server.web.api.service.AuthService;
-import server.web.api.service.MessageService;
 import server.web.api.service.UserSessionService;
 
 @Controller
@@ -16,7 +15,7 @@ public class AuthController {
     private final AuthService authService;
 
 
-    public AuthController(AuthService authService, UserSessionService userSessionService) {
+    public AuthController(AuthService authService) {
         this.authService = authService;
     }
     @MessageMapping("login")

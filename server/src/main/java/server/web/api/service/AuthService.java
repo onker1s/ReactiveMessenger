@@ -19,17 +19,19 @@ import java.util.ArrayList;
 public class AuthService {
     private final UserRepository userRepo;
     private final UserSessionService userSessionService;
+    private final DialogService dialogService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final MessageRepository messageRepository;
+
 
     public AuthService(UserRepository userRepo, UserSessionService userSessionService,
-                       PasswordEncoder passwordEncoder, JwtUtil jwtUtil, MessageRepository messageRepository) {
+                       PasswordEncoder passwordEncoder, JwtUtil jwtUtil, DialogService dialogService) {
+        this.dialogService = dialogService;
         this.userRepo = userRepo;
         this.userSessionService = userSessionService;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
-        this.messageRepository = messageRepository;
+
     }
 
     public Mono<AuthResponse> login(AuthData data, RSocketRequester requester) {
@@ -38,24 +40,16 @@ public class AuthService {
                 .flatMap(user -> {
                     if (passwordEncoder.matches(data.getPassword(), user.getPassword())) {
                         String token = jwtUtil.generateToken(user.getUsername());
-                        // Регистрируем пользователя
+
                         Mono<Void> registerMono = userSessionService.registerUser(user.getUsername(), requester);
 
-                        // Рассылаем статус "online" контактам
-                        Flux<Void> statusUpdates = messageRepository
-                                .findAllByRecipientUsernameOrSenderUsername(user.getUsername(), user.getUsername())
-                                .map(message -> {
-                                    if (message.getSenderUsername().equals(user.getUsername())) {
-                                        return message.getRecipientUsername();
-                                    } else {
-                                        return message.getSenderUsername();
-                                    }
-                                })
-                                .distinct()
+                        Flux<Void> statusUpdates = dialogService.getContacts(user.getUsername())
                                 .flatMap(contact ->
-                                        userSessionService.sendStatusUserUpdate(data.getUsername(), contact, "online")
+                                        userSessionService.sendStatusUserUpdate(user.getUsername(), contact, "online")
                                                 .onErrorResume(e -> {
-                                                    System.err.println("Не удалось отправить статус для " + contact + ": " + e.getMessage());
+                                                    System.err.println("Не удалось отправить статус для "
+                                                            + contact + ": "
+                                                            + e.getMessage());
                                                     return Mono.empty();
                                                 })
                                 );
@@ -77,26 +71,18 @@ public class AuthService {
 
 
     public Mono<Void> logout(String username) {
-        return messageRepository
-                .findAllByRecipientUsernameOrSenderUsername(username, username)
-                .map(message -> {
-                    if (message.getSenderUsername().equals(username)) {
-                        return message.getRecipientUsername();
-                    } else {
-                        return message.getSenderUsername();
-                    }
-                })
-                .distinct()
+        return dialogService.getContacts(username)
                 .flatMap(contactUsername ->
                         userSessionService.sendStatusUserUpdate(username, contactUsername, "offline")
                                 .onErrorResume(e -> {
-                                    // можно залогировать, если нужно
-                                    System.err.println("Не удалось отправить статус для " + contactUsername + ": " + e.getMessage());
+                                    System.err.println("Не удалось отправить статус для "
+                                            + contactUsername + ": " + e.getMessage());
                                     return Mono.empty();
                                 })
                 )
                 .then(userSessionService.unregisterUser(username));
     }
+
 
 
 

@@ -3,6 +3,7 @@ package client.connection;
 import ch.qos.logback.core.joran.sanity.Pair;
 import client.dto.AuthData;
 import client.dto.AuthResponse;
+import client.dto.Dialog;
 import client.dto.Message;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rsocket.SocketAcceptor;
@@ -45,7 +46,6 @@ public class RSocketClientService {
         String host = props.getProperty("host");
         String port = props.getProperty("port");
 
-        // Настраиваем стратегию с Jackson-декодером
         RSocketStrategies strategies = RSocketStrategies.builder()
                 .decoder(new Jackson2JsonDecoder())
                 .encoder(new Jackson2JsonEncoder())
@@ -71,10 +71,7 @@ public class RSocketClientService {
         return requester
                 .route("login")
                 .data(request)
-                .retrieveMono(AuthResponse.class)
-                .doOnNext(response -> {
-                    log.info("Login successful. Token received: {}", response.getStatus() + " " + response.getToken());
-                });
+                .retrieveMono(AuthResponse.class);
     }
 
     public Mono<Void> logout() {
@@ -85,29 +82,28 @@ public class RSocketClientService {
                 .retrieveMono(Void.class);
     }
 
-    public Mono<Void> sendMessage(String recipientUsername, String password) {
-        Message message = new Message(username,recipientUsername, password);
+    public Mono<Void> sendMessage(String dialogId, String text) {
+        Message message = new Message(username,dialogId, text);
         return requester
                 .route("send-message")
                 .metadata("Bearer " + jwtToken, MimeType.valueOf("message/x.rsocket.authentication.bearer.v0"))
                 .data(message)
                 .retrieveMono(Void.class);
     }
-    public Flux<Message> getDialog(String recipientUsername) {
-        AuthData d = new AuthData(username, recipientUsername);
+    public Flux<Message> getDialog(String dialogId) {
         System.out.println("getDialog");
         return requester
                 .route("load-dialog")
                 .metadata("Bearer " + jwtToken, MimeType.valueOf("message/x.rsocket.authentication.bearer.v0"))
-                .data(d)
+                .data(dialogId)
                 .retrieveFlux(Message.class);
     }
-    public Flux<String> getDialogues() {
+    public Flux<Dialog> getDialogues() {
         return requester
                 .route("load-dialogues")
                 .metadata("Bearer " + jwtToken, MimeType.valueOf("message/x.rsocket.authentication.bearer.v0"))
                 .data(username)
-                .retrieveFlux(String.class);
+                .retrieveFlux(Dialog.class);
     }
     public Flux<AuthData> getStatuses() {
         return requester
@@ -127,6 +123,13 @@ public class RSocketClientService {
                 .metadata("Bearer " + jwtToken, MimeType.valueOf("message/x.rsocket.authentication.bearer.v0"))
                 .data(username)
                 .retrieveMono(Boolean.class);
+    }
+    public Mono<Dialog> createDialog(AuthData request) {
+        return requester
+                .route("create-dialogue")
+                .metadata("Bearer " + jwtToken, MimeType.valueOf("message/x.rsocket.authentication.bearer.v0"))
+                .data(request)
+                .retrieveMono(Dialog.class);
     }
     public static void setToken(String token) {
          jwtToken = token;
